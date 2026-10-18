@@ -1,38 +1,38 @@
-from flask import Flask, render_template
+from flask import Flask, jsonify, request
+from flask_mysqldb import MySQL
+from flask_cors import CORS 
 
-app=Flask(__name__)
+from config import config 
 
-@app.route("/") #decorador o ruta
-def index():
-    titulo="Pagina de Inicio"
-    listado=['Python', 'Flask', 'Jinja2', 'HTML', 'CSS']
-    return render_template("index.html", titulo=titulo,listado=listado)
+app= Flask(__name__)
+CORS(app)
+con=MySQL(app)
 
-@app.route("/hola")
-def hola():
-    return "<h1> hola PWA - IEVN1003 </h1>"
+@app.route("/alumnos", methods=['GET'])
+def lista_alumnos():
+    try:
+        cursor=con.connection.cursor()
+        sql="select * from alumnos"
+        cursor.execute(sql)
+        datos=cursor.fetchall()
+        alumnos=[]
+        for fila in datos:
+            alumno={"matricula": fila[0],"nombre":fila[1], "apaterno":fila[2], "amaterno":fila[3], "correo":fila[4]}
 
-# como pasar parametros por url
+            alumnos.append(alumno) #lo mando a la lista
+        return jsonify({'alumnos':alumnos,'mensaje':"Lista de alumnos",'exito':True})
 
-@app.route("/user/<string:nom>")
-def user(nom):
-    return "<h1> hola user: {} </h1>".format(nom)
+    except Exception as ex:
+        return jsonify({"message": "error {}".format(ex), 'exito':False})
 
-@app.route("/numero/<int:n>")
-def numero(n):
-    return "<h1> Numero: {} </h1>".format(n)
-
-@app.route("/user/<int:id>/<string:username>")
-def username(id,username):
-    return "ID: {} Nombre: {}".format(id,username)
-
-@app.route("/suma/<float:n1>/<float:n2>")
-def func(n1,n2):
-    return "la suma es: {}".format(n1+n2)
+def pagina_no_encontrada(error):
+    return "<h1>Pagina_no_encontrada</h1>"
 
 
 if __name__=="__main__":
-    app.run(debug=True)
-
+    app.config.from_object(config['development'])
+    app.register_error_handler(404,pagina_no_encontrada)
+    app.run(host='0.0.0.0',port=5000)
 
 #{}
+#[]
